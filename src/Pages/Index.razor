@@ -1,0 +1,211 @@
+﻿@page "/"
+@inject AnonymizerService Service
+@inject MessageService MessageService
+<div class="row">
+    <div class="col text-center">
+        <h2>DB anonymizer</h2>
+        <p>removes sensitive user information from your database</p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-8">
+        <div class="form-group row">
+            <label for="connectionString" class="col-sm-3 col-form-label px-0">Connection string:</label>
+            <div class="col-sm-9 px-0">
+                <input type="password" class="form-control" id="connectionString"
+                       placeholder="Data Source=...;Initial Catalog=...;user=...;password=...;" @bind="@ConnectionString">
+            </div>
+        </div>
+
+    </div>
+    <div class="col-4">
+        <button class="btn btn-primary mb-2" disabled="@IsConnectDisabled" @onclick="@(async () => await Connect())">
+            Connect
+        </button>
+        <button class="btn btn-danger mb-2" @onclick="@(async () => await ExecuteReplace())">Execute</button>
+    </div>
+</div>
+<div class="row">
+    <div class="col">
+        <h5>Tables</h5>
+        <table class="table-dark table-striped table-hover w-100">
+            <tbody>
+                @foreach (var tableName in TableNames.OrderBy(_ => _))
+                {
+                    <tr class="p-2">
+                        <td class="p-1" @onclick="@(async () => await TableSelected(tableName))">@tableName</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    <div class="col ">
+        <h5>Columns</h5>
+        <table class="table-dark table-striped table-hover w-100">
+            <tbody>
+                @foreach (var columnName in ColumnNames.OrderBy(_ => _))
+                {
+                    <tr class="p-2">
+                        <td class="p-1" @onclick="@(() => ColumnSelected(columnName))">@columnName</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    <div class="col">
+        <h5>Replace settings</h5>
+        <div class="form-group">
+            <label for="replaceType">Replace type</label>
+            <select class="form-control" id="lfmtype" aria-describedby="replaceHelp" @bind="SelectedReplaceType">
+                @foreach (var type in ReplaceTypes)
+                {
+                    <option value="@type">@type</option>
+                }
+            </select>
+            <small id="replaceHelp" class="form-text text-muted-app">Select the value type to replace.</small>
+        </div>
+        <div class="form-group">
+            <button class="btn btn-success w-100"  @onclick="@(() => AddToReplaceList())" disabled="@IsColumnSelectDisabled"><i class="oi oi-plus"></i></button>
+            <small class="form-text text-muted-app">Add to replace list.</small>
+        </div>
+        <div class="form-group">
+            <button class="btn btn-warning w-100" disabled="@IsRemoveReplaceDisabled" @onclick="@(() => RemoveFromReplaceList())"><i class="oi oi-minus"></i></button>
+            <small class="form-text text-muted-app">Remove from replace list.</small>
+        </div>
+        <div class="form-group">
+            <button class="btn btn-primary w-100" disabled="@IsColumnSelectDisabled" @onclick="@(async () => await ShowExample())"><i class="oi oi-random"></i></button>
+            <small class="form-text text-muted-app">Show example for column.</small>
+        </div>
+        <div class="form-group">
+            <label>Selected column:</label>
+            <h5>@SelectedColumn</h5>
+        </div>
+        <div class="form-group">
+            <label>Before:</label>
+            <h5>@BeforeAnonymize</h5>
+        </div>
+        <div class="form-group">
+            <label>After:</label>
+            <h5>@AfterAnonymize</h5>
+        </div>
+    </div>
+    <div class="col">
+        <h5>Selected</h5>
+        <table class="table-dark table-striped table-hover w-100">
+            <tbody>
+                @foreach (var replace in ReplaceObjects.OrderBy(_ => _.ColumnName))
+                {
+                    <tr class="p-2">
+                        <td class="p-1 "  @onclick="@(() => ReplaceObjectSelected(replace))">@replace.ColumnName</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+    </div>
+</div>
+@code{
+    [CascadingParameter]
+    public EventCallback<string> UpdateStatus { get; set; }
+    private string ConnectionString { get; set; } = "";
+    private IEnumerable<String> TableNames { get; set; } = new List<string>();
+    private IEnumerable<String> ColumnNames { get; set; } = new List<string>();
+    private bool IsConnectDisabled => string.IsNullOrWhiteSpace(ConnectionString);
+    private bool IsColumnSelectDisabled => string.IsNullOrWhiteSpace(SelectedColumn) || string.IsNullOrWhiteSpace(SelectedReplaceType);
+    private bool IsRemoveReplaceDisabled => SelectedReplaceObject == null;
+    private string SelectedTable { get; set; } = "";
+    private string SelectedColumn { get; set; } = "";
+    private List<string> ReplaceTypes { get; set; } = new List<string>();
+    private string SelectedReplaceType { get; set; } = "";
+    private List<ReplaceObject> ReplaceObjects { get; set; } = new List<ReplaceObject>();
+    private ReplaceObject SelectedReplaceObject { get; set; } = null!;
+    private string BeforeAnonymize { get; set; } = "";
+    private string AfterAnonymize { get; set; } = "";
+
+    protected override void OnInitialized()
+    {
+        ReplaceTypes = new List<string>
+        {
+            "Email",
+            "First and last name",
+            "First name",
+            "Last name",
+            "Personal number (yyyymmdd-xxxx)",
+            "Phonenumber",
+            "Username",
+        };
+        base.OnInitialized();
+    }
+
+    private async Task Connect()
+    {
+        TableNames = await Service.ConnectToDatabase(ConnectionString);
+    }
+
+    private async Task TableSelected(string tableName)
+    {
+        SelectedTable = tableName;
+        ColumnNames = await Service.GetColumns(tableName, ConnectionString);
+    }
+
+    private void ColumnSelected(string columnName)
+    {
+        SelectedColumn = columnName;
+    }
+
+    private async Task ShowExample()
+    {
+        try
+        {
+            var (before, after) = await Service.ShowExample(SelectedReplaceType, SelectedColumn, SelectedTable, ConnectionString);
+            BeforeAnonymize = before;
+            AfterAnonymize = after;
+        }
+        catch (Exception e)
+        {
+            MessageService.SendMessage(e.ToString());
+        }
+    }
+
+    private void AddToReplaceList()
+    {
+        if(!ReplaceObjects.Any(_ => _.ColumnName == SelectedColumn))
+        {
+            ReplaceObjects.Add(new ReplaceObject
+            {
+                ColumnName = SelectedColumn,
+                ReplaceType = SelectedReplaceType,
+                TableName = SelectedTable
+            });
+        }
+    }
+
+    private void ReplaceObjectSelected(ReplaceObject replace)
+    {
+        SelectedReplaceObject = replace;
+    }
+
+    private void RemoveFromReplaceList()
+    {
+        ReplaceObjects.Remove(SelectedReplaceObject);
+        SelectedReplaceObject = null;
+    }
+
+    private async Task ExecuteReplace()
+    {
+        try
+        {
+
+            await Service.ExecuteReplace(ReplaceObjects, ConnectionString);
+            ReplaceObjects.Clear();
+            SelectedReplaceObject = null!;
+
+        }
+        catch (Exception e)
+        {
+            MessageService.SendMessage(e.ToString());
+        }
+    }
+
+}
