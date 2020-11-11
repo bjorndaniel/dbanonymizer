@@ -41,10 +41,12 @@ namespace DBAnonymizer
             try
             {
                 _messageService.SendMessage("Connecting...");
-                using var connection = new SqlConnection(connectionString);
-                await connection.OpenAsync().ConfigureAwait(false);
-                _messageService.SendMessage($"Connected to {connection.Database}");
-                table = await connection.GetSchemaAsync("Tables", restrictionValues: new string[] { null!, null!, null!, "BASE TABLE" }).ConfigureAwait(false);
+                using (var connection = new SqlConnection(connectionString))
+                {
+                    await connection.OpenAsync().ConfigureAwait(false);
+                    _messageService.SendMessage($"Connected to {connection.Database}");
+                    table = await connection.GetSchemaAsync("Tables", restrictionValues: new string[] { null!, null!, null!, "BASE TABLE" }).ConfigureAwait(false);
+                }
 
             }
             catch (SqlException e)
@@ -195,18 +197,20 @@ namespace DBAnonymizer
         public async Task<IEnumerable<string>> GetColumns(string selectedTable, string connectionString)
         {
             _messageService.SendMessage("Connecting...");
-            using var connection = new SqlConnection(connectionString);
-            await connection.OpenAsync().ConfigureAwait(false);
-            var columnRestrictions = new string[4];
-            columnRestrictions[2] = selectedTable;
-            _messageService.SendMessage($"Fetching columns for table {selectedTable}");
-            var columns = await connection.GetSchemaAsync("Columns", columnRestrictions).ConfigureAwait(false);
-            var result = new List<string>();
-            foreach (DataRow row in columns.Rows)
+            using (var connection = new SqlConnection(connectionString))
             {
-                result.Add(row["COLUMN_NAME"]?.ToString() ?? "");
+                await connection.OpenAsync().ConfigureAwait(false);
+                var columnRestrictions = new string[4];
+                columnRestrictions[2] = selectedTable;
+                _messageService.SendMessage($"Fetching columns for table {selectedTable}");
+                var columns = await connection.GetSchemaAsync("Columns", columnRestrictions).ConfigureAwait(false);
+                var result = new List<string>();
+                foreach (DataRow row in columns.Rows)
+                {
+                    result.Add(row["COLUMN_NAME"]?.ToString() ?? "");
+                }
+                return result;
             }
-            return result;
         }
 
         public async Task<string> GetColumnProperties(string selectedColumn, string selectedTable, string connectionString)

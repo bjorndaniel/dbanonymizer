@@ -189,14 +189,13 @@
     private void RemoveFromReplaceList()
     {
         ReplaceObjects.Remove(SelectedReplaceObject);
-        SelectedReplaceObject = null;
+        SelectedReplaceObject = null!;
     }
 
     private async Task ExecuteReplace()
     {
         try
         {
-
             await Service.ExecuteReplace(ReplaceObjects, ConnectionString);
             ReplaceObjects.Clear();
             SelectedReplaceObject = null!;
@@ -207,5 +206,4 @@
             MessageService.SendMessage(e.ToString());
         }
     }
-
 }
