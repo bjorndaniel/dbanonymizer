@@ -106,15 +106,15 @@ namespace DBAnonymizer
                     var reader = await command.ExecuteReaderAsync().ConfigureAwait(false);
                     if (!names.Any())
                     {
-                        _messageService.SendMessage("COULD NOT CONTACT API, PLEASE TRY AGAIN!" );
+                        _messageService.SendMessage("COULD NOT CONTACT API, PLEASE TRY AGAIN!");
                         return;
                     }
                     if (reader.HasRows)
                     {
-                        while (reader.Read())
+                        while (await reader.ReadAsync().ConfigureAwait(false))
                         {
                             var value = "";
-                            if (!reader.IsDBNull(reader.GetOrdinal(replacer.ColumnName)))
+                            if (!await reader.IsDBNullAsync(reader.GetOrdinal(replacer.ColumnName)).ConfigureAwait(false))
                             {
                                 value = reader.GetString(0).Replace("'", "''");
                             }
@@ -174,7 +174,7 @@ namespace DBAnonymizer
 
                         }
                     }
-                    reader.Close();
+                    await reader.CloseAsync().ConfigureAwait(false);
                 }
             }
             using (var connection = new SqlConnection(connectionString))
@@ -219,7 +219,7 @@ namespace DBAnonymizer
                 var reader = await command.ExecuteReaderAsync().ConfigureAwait(false);
                 if (reader.HasRows)
                 {
-                    reader.Read();
+                    await reader.ReadAsync().ConfigureAwait(false);
                     return reader.GetString(0);
                 }
                 return "";
@@ -273,8 +273,8 @@ namespace DBAnonymizer
                 var reader = await command.ExecuteReaderAsync().ConfigureAwait(false);
                 if (reader.HasRows)
                 {
-                    reader.Read();
-                    var value = reader.IsDBNull(0) ? "" : reader.GetString(0);
+                    await reader.ReadAsync().ConfigureAwait(false);
+                    var value = await reader.IsDBNullAsync(0).ConfigureAwait(false) ? "" : reader.GetString(0);
                     before = value;
                 }
             }
@@ -292,8 +292,8 @@ namespace DBAnonymizer
                 var reader = await primaryKeyCommand.ExecuteReaderAsync().ConfigureAwait(false);
                 if (reader.HasRows)
                 {
-                    reader.Read();
-                    var value = reader.IsDBNull(0) ? "" : reader.GetString(0);
+                    await reader.ReadAsync().ConfigureAwait(false);
+                    var value = await reader.IsDBNullAsync(0) ? "" : reader.GetString(0);
                     return value;
                 }
 

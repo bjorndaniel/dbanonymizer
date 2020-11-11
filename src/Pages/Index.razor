@@ -9,7 +9,7 @@
 </div>
 
 <div class="row">
-    <div class="col-8">
+    <div class="col-12 col-md-8 col-lg-8">
         <div class="form-group row">
             <label for="connectionString" class="col-sm-3 col-form-label px-0">Connection string:</label>
             <div class="col-sm-9 px-0">
@@ -19,7 +19,7 @@
         </div>
 
     </div>
-    <div class="col-4">
+    <div class="col-12 col-md-4 col-lg-4 text-center">
         <button class="btn btn-primary mb-2" disabled="@IsConnectDisabled" @onclick="@(async () => await Connect())">
             Connect
         </button>
@@ -27,7 +27,7 @@
     </div>
 </div>
 <div class="row">
-    <div class="col">
+    <div class="col-12 col-md-6 col-lg-3">
         <h5>Tables</h5>
         <table class="table-dark table-striped table-hover w-100">
             <tbody>
@@ -40,7 +40,7 @@
             </tbody>
         </table>
     </div>
-    <div class="col ">
+    <div class="col-12 col-md-6 col-lg-3 ">
         <h5>Columns</h5>
         <table class="table-dark table-striped table-hover w-100">
             <tbody>
@@ -53,7 +53,7 @@
             </tbody>
         </table>
     </div>
-    <div class="col">
+    <div class="col-12 col-md-6 col-lg-3">
         <h5>Replace settings</h5>
         <div class="form-group">
             <label for="replaceType">Replace type</label>
@@ -66,7 +66,7 @@
             <small id="replaceHelp" class="form-text text-muted-app">Select the value type to replace.</small>
         </div>
         <div class="form-group">
-            <button class="btn btn-success w-100"  @onclick="@(() => AddToReplaceList())" disabled="@IsColumnSelectDisabled"><i class="oi oi-plus"></i></button>
+            <button class="btn btn-success w-100" @onclick="@(() => AddToReplaceList())" disabled="@IsColumnSelectDisabled"><i class="oi oi-plus"></i></button>
             <small class="form-text text-muted-app">Add to replace list.</small>
         </div>
         <div class="form-group">
@@ -90,14 +90,14 @@
             <h5>@AfterAnonymize</h5>
         </div>
     </div>
-    <div class="col">
+    <div class="col-12 col-md-6 col-lg-3">
         <h5>Selected</h5>
         <table class="table-dark table-striped table-hover w-100">
             <tbody>
                 @foreach (var replace in ReplaceObjects.OrderBy(_ => _.ColumnName))
                 {
                     <tr class="p-2">
-                        <td class="p-1 "  @onclick="@(() => ReplaceObjectSelected(replace))">@replace.ColumnName</td>
+                        <td class="p-1 " @onclick="@(() => ReplaceObjectSelected(replace))">@replace.ColumnName</td>
                     </tr>
                 }
             </tbody>
@@ -126,7 +126,7 @@
     protected override void OnInitialized()
     {
         ReplaceTypes = new List<string>
-        {
+{
             "Email",
             "First and last name",
             "First name",
@@ -170,7 +170,7 @@
 
     private void AddToReplaceList()
     {
-        if(!ReplaceObjects.Any(_ => _.ColumnName == SelectedColumn))
+        if (!ReplaceObjects.Any(_ => _.ColumnName == SelectedColumn))
         {
             ReplaceObjects.Add(new ReplaceObject
             {
