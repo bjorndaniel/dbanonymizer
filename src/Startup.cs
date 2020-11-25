@@ -1,3 +1,5 @@
+using Blazored.LocalStorage;
+using Blazored.Modal;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -22,6 +24,8 @@ namespace DBAnonymizer
         {
             services.AddRazorPages();
             services.AddServerSideBlazor();
+            services.AddBlazoredModal();
+            services.AddBlazoredLocalStorage();
             services.AddScoped<AnonymizerService>();
             services.AddSingleton<MessageService>();
             services.AddHttpClient();

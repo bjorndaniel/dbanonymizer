@@ -5,6 +5,8 @@
     <nullable>enable</nullable>
   </PropertyGroup>
 <ItemGroup>
+  <PackageReference Include="Blazored.LocalStorage" Version="3.0.0" />
+  <PackageReference Include="Blazored.Modal" Version="5.1.0" />
   <PackageReference Include="BlazorPro.BlazorSize" Version="2.3.0" />
     <PackageReference Include="System.Text.Json" Version="5.0.0" />
     <PackageReference Include="Microsoft.Data.SqlClient" Version="2.1.0-preview1.20235.1" />

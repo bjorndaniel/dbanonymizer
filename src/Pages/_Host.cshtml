@@ -14,7 +14,9 @@
     <title>DBAnonymizer</title>
     <base href="~/" />
     <link rel="stylesheet" href="css/bootstrap/bootstrap.min.css" />
+    <link href="_content/Blazored.Modal/blazored-modal.css" rel="stylesheet" />
     <link href="css/site.css" rel="stylesheet" />
+    <link href="css/loader.css" rel="stylesheet" />
 </head>
 
 <body>
@@ -33,9 +35,21 @@
 
     <script src="_framework/blazor.server.js"></script>
     <script src="_content/BlazorPro.BlazorSize/blazorSize.min.js"></script>
+    <script src="_content/Blazored.Modal/blazored.modal.js"></script>
+    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"
+        integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN"
+        crossorigin="anonymous"></script>
+    <script src="js/bootstrap.bundle.min.js"></script>
+    <script src="js/json-formatter.umd.js"></script>
     <script>
         function shouldExecute() {
             return confirm("Execute replacements in database?");
+        }
+        function showJson(json) {
+            const formatter = new JSONFormatter(JSON.parse(json), 1, { theme: 'dark' });
+            const container = document.getElementById("jsonContainer");
+            container.innerHTML = '';
+            container.appendChild(formatter.render());
         }
     </script>
 </body>

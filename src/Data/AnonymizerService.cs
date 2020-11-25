@@ -39,6 +39,11 @@ namespace DBAnonymizer
             DataTable table = null!;
             try
             {
+                if (string.IsNullOrEmpty(connectionString))
+                {
+                    _messageService.SendMessage("Invalid connection string");
+                    return new List<string>();
+                }
                 _messageService.SendMessage("Connecting...");
                 using (var connection = new SqlConnection(connectionString))
                 {
@@ -49,7 +54,7 @@ namespace DBAnonymizer
                 var result = new List<string>();
                 foreach (DataRow row in table.Rows)
                 {
-                    result.Add(row["TABLE_NAME"]?.ToString() ?? "");
+                    result.Add($"{row["TABLE_SCHEMA"]?.ToString() ?? ""}.{row["TABLE_NAME"]?.ToString() ?? ""}");
                 }
                 return result;
             }
@@ -71,7 +76,7 @@ namespace DBAnonymizer
             foreach (var replacer in replaceObjects)
             {
                 using (var connection = new SqlConnection(connectionString))
-                using (var countCommand = new SqlCommand($"SELECT COUNT(*) FROM {replacer.TableName}", connection))
+                using (var countCommand = new SqlCommand($"SELECT COUNT(*) FROM {replacer.TableNameToSql()}", connection))
                 {
                     await connection.OpenAsync().ConfigureAwait(false);
                     var rows = (int)(await countCommand.ExecuteScalarAsync().ConfigureAwait(false) ?? 0);
@@ -100,8 +105,8 @@ namespace DBAnonymizer
                 int counter = 0;
                 _messageService.SendMessage($"Starting replacements for {replacer.ColumnName}");
                 using (var connection = new SqlConnection(connectionString))
-                using (var command = new SqlCommand($"SELECT {replacer.ColumnName}, {pkColumn} FROM {replacer.TableName} order by {pkColumn}", connection))
-                using (var countCommand = new SqlCommand($"SELECT COUNT(*) FROM {replacer.TableName}", connection))
+                using (var command = new SqlCommand($"SELECT {replacer.ColumnName}, {pkColumn} FROM {replacer.TableNameToSql()} order by {pkColumn}", connection))
+                using (var countCommand = new SqlCommand($"SELECT COUNT(*) FROM {replacer.TableNameToSql()}", connection))
                 {
                     await connection.OpenAsync().ConfigureAwait(false);
                     var reader = await command.ExecuteReaderAsync().ConfigureAwait(false);
@@ -138,31 +143,31 @@ namespace DBAnonymizer
                             {
                                 case "Email":
                                     var mailAddress = $"{names[counter].name.first}.{names[counter].name.last}@nomail.com".Replace("'", "''");
-                                    commands.Add($"UPDATE {replacer.TableName} SET {replacer.ColumnName} = '{mailAddress}' WHERE {pkColumn} = {primaryKey}");
+                                    commands.Add($"UPDATE {replacer.TableNameToSql()} SET {replacer.ColumnName} = '{mailAddress}' WHERE {pkColumn} = {primaryKey}");
                                     break;
                                 case "First name":
                                     var firstName = $"{names[counter].name.first}".Replace("'", "''");
-                                    commands.Add($"UPDATE {replacer.TableName} SET {replacer.ColumnName} = '{firstName}' WHERE {pkColumn} = {primaryKey}");
+                                    commands.Add($"UPDATE {replacer.TableNameToSql()} SET {replacer.ColumnName} = '{firstName}' WHERE {pkColumn} = {primaryKey}");
                                     break;
                                 case "Last name":
                                     var lastName = $"{names[counter].name.last}".Replace("'", "''");
-                                    commands.Add($"UPDATE {replacer.TableName} SET {replacer.ColumnName} = '{lastName}' WHERE {pkColumn} = {primaryKey}");
+                                    commands.Add($"UPDATE {replacer.TableNameToSql()} SET {replacer.ColumnName} = '{lastName}' WHERE {pkColumn} = {primaryKey}");
                                     break;
                                 case "First and last name":
                                     var firstlast = $"{names[counter].name.first} {names[counter].name.last}".Replace("'", "''");
-                                    commands.Add($"UPDATE {replacer.TableName} SET {replacer.ColumnName} = '{firstlast}' WHERE {pkColumn} = {primaryKey}");
+                                    commands.Add($"UPDATE {replacer.TableNameToSql()} SET {replacer.ColumnName} = '{firstlast}' WHERE {pkColumn} = {primaryKey}");
                                     break;
                                 case "Username":
                                     var username = names[counter].login.username.Replace("'", "''");
-                                    commands.Add($"UPDATE {replacer.TableName} SET {replacer.ColumnName} = '{username}' WHERE {pkColumn} = {primaryKey}");
+                                    commands.Add($"UPDATE {replacer.TableNameToSql()} SET {replacer.ColumnName} = '{username}' WHERE {pkColumn} = {primaryKey}");
                                     break;
                                 case "Phonenumber":
                                     var phone = names[counter].phone;
-                                    commands.Add($"UPDATE {replacer.TableName} SET {replacer.ColumnName} = '{phone}' WHERE {pkColumn} = {primaryKey}");
+                                    commands.Add($"UPDATE {replacer.TableNameToSql()} SET {replacer.ColumnName} = '{phone}' WHERE {pkColumn} = {primaryKey}");
                                     break;
                                 case "Personal number (yyyymmdd-xxxx)":
                                     var pNumber = $"{names[counter].dob.date.ToString("yyyyMMdd")}-{_random.Next(1, 9)}{_random.Next(1, 9)}{_random.Next(1, 9)}{_random.Next(1, 9)}";
-                                    commands.Add($"UPDATE {replacer.TableName} SET {replacer.ColumnName} = '{pNumber}' WHERE {pkColumn} = {primaryKey}");
+                                    commands.Add($"UPDATE {replacer.TableNameToSql()} SET {replacer.ColumnName} = '{pNumber}' WHERE {pkColumn} = {primaryKey}");
                                     break;
                                 default:
                                     break;
@@ -196,20 +201,28 @@ namespace DBAnonymizer
         public async Task<IEnumerable<string>> GetColumns(string selectedTable, string connectionString)
         {
             _messageService.SendMessage("Connecting...");
-            using (var connection = new SqlConnection(connectionString))
+            try
             {
-                await connection.OpenAsync().ConfigureAwait(false);
-                var columnRestrictions = new string[4];
-                columnRestrictions[2] = selectedTable;
-                _messageService.SendMessage($"Fetching columns for table {selectedTable}");
-                var columns = await connection.GetSchemaAsync("Columns", columnRestrictions).ConfigureAwait(false);
-                var result = new List<string>();
-                foreach (DataRow row in columns.Rows)
+                using (var connection = new SqlConnection(connectionString))
                 {
-                    result.Add(row["COLUMN_NAME"]?.ToString() ?? "");
+                    await connection.OpenAsync().ConfigureAwait(false);
+                    var columnRestrictions = new string[4];
+                    columnRestrictions[2] = selectedTable.Split(".").Last();
+                    _messageService.SendMessage($"Fetching columns for table {selectedTable}");
+                    var columns = await connection.GetSchemaAsync("Columns", columnRestrictions).ConfigureAwait(false);
+                    var result = new List<string>();
+                    foreach (DataRow row in columns.Rows)
+                    {
+                        result.Add(row["COLUMN_NAME"]?.ToString() ?? "");
+                    }
+                    return result;
                 }
-                return result;
             }
+            catch (Exception e)
+            {
+                _messageService.SendMessage(e.ToString());
+            }
+            return new List<string>();
         }
 
         public async Task<string> GetColumnProperties(string selectedColumn, string selectedTable, string connectionString)
@@ -288,7 +301,7 @@ namespace DBAnonymizer
         private async Task<string> GetPrimaryKeyColumn(string tableName, string connectionString)
         {
             using (var connection = new SqlConnection(connectionString))
-            using (var primaryKeyCommand = new SqlCommand(string.Format(_primaryKeyCommand, tableName)))
+            using (var primaryKeyCommand = new SqlCommand(string.Format(_primaryKeyCommand, tableName.Split(".").Last())))
             {
                 await connection.OpenAsync().ConfigureAwait(false);
                 primaryKeyCommand.Connection = connection;

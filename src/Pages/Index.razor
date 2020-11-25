@@ -2,119 +2,172 @@
 @inject AnonymizerService Service
 @inject MessageService MessageService
 @inject IJSRuntime JSRuntime
+@inject IModalService Modal
+@inject Blazored.LocalStorage.ILocalStorageService LocalStorage
+
 <div class="row">
     <div class="col text-center">
         <h2>DB anonymizer</h2>
         <p>removes sensitive user information from your database</p>
     </div>
 </div>
-
 <div class="row">
-    <div class="col-12 col-md-8 col-lg-8">
+    <div class="col-12 col-md-6 col-lg-6">
         <div class="form-group row">
             <label for="connectionString" class="col-sm-3 col-form-label px-0">Connection string:</label>
             <div class="col-sm-9 px-0">
-                <input type="password" class="form-control" id="connectionString"
-                    placeholder="Data Source=...;Initial Catalog=...;user=...;password=...;" @bind="@ConnectionString">
+                <input type="password" class="form-control" id="connectionString" @onkeypress="@KeyPressed"
+                    placeholder="Data Source=...;Initial Catalog=...;user=...;password=...;" @bind="@ConnectionString"
+                    @onpaste="@(() => StateHasChanged())">
             </div>
         </div>
 
     </div>
-    <div class="col-12 col-md-4 col-lg-4 text-center">
+    <div class="col-12 col-md-6 col-lg-6 text-center">
         <button class="btn btn-primary mb-2" disabled="@IsConnectDisabled" @onclick="@(async () => await Connect())">
             Connect
         </button>
         <button class="btn btn-danger mb-2" disabled="@IsExecuteDisabled"
             @onclick="@(async () => await ExecuteReplace())">Execute</button>
-    </div>
-</div>
-<div class="row">
-    <div class="col text-center">
-        <p>@StatusMessage</p>
-    </div>
-</div>
-<div class="row">
-    <div class="col-12 col-md-6 col-lg-3">
-        <h5>Tables</h5>
-        <table class="table-dark table-striped table-hover w-100">
-            <tbody>
-                @foreach (var tableName in TableNames.OrderBy(_ => _))
+        <button class="btn btn-success mb-2" @onclick="@(async () => await Save())">Save config</button>
+        <button type="button" class="btn btn-secondary dropdown-toggle mb-2" data-toggle="dropdown" aria-haspopup="true"
+            aria-expanded="false">
+            Load config
+        </button>
+        <div class="dropdown-menu">
+            @if (SavedConfigs != null)
+            {
+                foreach (var config in SavedConfigs.Configs)
                 {
-                    <tr class="p-2">
-                        <td class="p-1" @onclick="@(async () => await TableSelected(tableName))">@tableName</td>
-                    </tr>
+                    <a class="dropdown-item" href="#" @onclick:preventDefault
+                        @onclick="@(() => LoadConfig(config))">@config.Name</a>
                 }
-            </tbody>
-        </table>
+            }
+                </div>
+            </div>
+        </div>
+        <div class="row status-row">
+            <div class="col text-center">
+                <p>@StatusMessage</p>
+            </div>
+        </div>
+        @if (!ShowLoading)
+{
+    <div class="row">
+        <div class="col-12 col-md-6 col-lg-3 px-1">
+            <div class="border h-100 p-1">
+                <h5>Tables</h5>
+                <table class="table-dark table-striped table-hover w-100">
+                    <tbody>
+                        @foreach (var tableName in TableNames.OrderBy(_ => _))
+                        {
+                            <tr class="p-2">
+                                <td class="p-1" @onclick="@(async () => await TableSelected(tableName))">@tableName</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="col-12 col-md-6 col-lg-3 px-1">
+            <div class="border h-100 p-1">
+                <h5>Columns</h5>
+                <table class="table-dark table-striped table-hover w-100">
+                    <tbody>
+                        @foreach (var columnName in ColumnNames.OrderBy(_ => _))
+                        {
+                            <tr class="p-2">
+                                <td class="p-1" @onclick="@(() => ColumnSelected(columnName))">@columnName</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="col-12 col-md-6 col-lg-3">
+            <h5>Replace settings</h5>
+            <div class="form-group">
+                <label for="replaceType">Replace type</label>
+                <select class="form-control" id="lfmtype" aria-describedby="replaceHelp" @bind="SelectedReplaceType">
+                    @foreach (var type in ReplaceTypes)
+                    {
+                        <option value="@type">@type</option>
+                    }
+                </select>
+                <small id="replaceHelp" class="form-text text-muted-app">Select the value type to replace.</small>
+            </div>
+            <div class="form-group">
+                <button class="btn btn-success w-100" @onclick="@(() => AddToReplaceList())"
+                    disabled="@IsColumnSelectDisabled"><i class="oi oi-plus"></i></button>
+                <small class="form-text text-muted-app">Add to replace list.</small>
+            </div>
+            <div class="form-group">
+                <button class="btn btn-warning w-100" disabled="@IsRemoveReplaceDisabled"
+                    @onclick="@(() => RemoveFromReplaceList())"><i class="oi oi-minus"></i></button>
+                <small class="form-text text-muted-app">Remove from replace list.</small>
+            </div>
+            <div class="form-group">
+                <button class="btn btn-primary w-100" disabled="@IsColumnSelectDisabled"
+                    @onclick="@(async () => await ShowExample())"><i class="oi oi-random"></i></button>
+                <small class="form-text text-muted-app">Show example for column.</small>
+            </div>
+            <div class="form-group">
+                <label>Selected column:</label>
+                <h5>@SelectedColumn</h5>
+            </div>
+            <div class="form-group">
+                <label>Before:</label>
+                <h5>@BeforeAnonymize</h5>
+            </div>
+            <div class="form-group">
+                <label>After:</label>
+                <h5>@AfterAnonymize</h5>
+            </div>
+        </div>
+        <div class="col-12 col-md-6 col-lg-3 px-1">
+            <div class="border h-100 p-1">
+                <h5>Selected</h5>
+                <table class="table-dark table-striped table-hover w-100">
+                    <tbody>
+                        @foreach (var replace in ReplaceObjects.OrderBy(_ => _.ColumnName))
+                        {
+                            <tr class="p-2">
+                                <td class="p-1 " @onclick="@(() => ReplaceObjectSelected(replace))">@replace.ColumnName
+                                    (@replace.TableName)</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
-    <div class="col-12 col-md-6 col-lg-3 ">
-        <h5>Columns</h5>
-        <table class="table-dark table-striped table-hover w-100">
-            <tbody>
-                @foreach (var columnName in ColumnNames.OrderBy(_ => _))
-                {
-                    <tr class="p-2">
-                        <td class="p-1" @onclick="@(() => ColumnSelected(columnName))">@columnName</td>
-                    </tr>
-                }
-            </tbody>
-        </table>
-    </div>
-    <div class="col-12 col-md-6 col-lg-3">
-        <h5>Replace settings</h5>
-        <div class="form-group">
-            <label for="replaceType">Replace type</label>
-            <select class="form-control" id="lfmtype" aria-describedby="replaceHelp" @bind="SelectedReplaceType">
-                @foreach (var type in ReplaceTypes)
-                {
-                    <option value="@type">@type</option>
-                }
-            </select>
-            <small id="replaceHelp" class="form-text text-muted-app">Select the value type to replace.</small>
-        </div>
-        <div class="form-group">
-            <button class="btn btn-success w-100" @onclick="@(() => AddToReplaceList())"
-                disabled="@IsColumnSelectDisabled"><i class="oi oi-plus"></i></button>
-            <small class="form-text text-muted-app">Add to replace list.</small>
-        </div>
-        <div class="form-group">
-            <button class="btn btn-warning w-100" disabled="@IsRemoveReplaceDisabled"
-                @onclick="@(() => RemoveFromReplaceList())"><i class="oi oi-minus"></i></button>
-            <small class="form-text text-muted-app">Remove from replace list.</small>
-        </div>
-        <div class="form-group">
-            <button class="btn btn-primary w-100" disabled="@IsColumnSelectDisabled"
-                @onclick="@(async () => await ShowExample())"><i class="oi oi-random"></i></button>
-            <small class="form-text text-muted-app">Show example for column.</small>
-        </div>
-        <div class="form-group">
-            <label>Selected column:</label>
-            <h5>@SelectedColumn</h5>
-        </div>
-        <div class="form-group">
-            <label>Before:</label>
-            <h5>@BeforeAnonymize</h5>
-        </div>
-        <div class="form-group">
-            <label>After:</label>
-            <h5>@AfterAnonymize</h5>
-        </div>
-    </div>
-    <div class="col-12 col-md-6 col-lg-3">
-        <h5>Selected</h5>
-        <table class="table-dark table-striped table-hover w-100">
-            <tbody>
-                @foreach (var replace in ReplaceObjects.OrderBy(_ => _.ColumnName))
-                {
-                    <tr class="p-2">
-                        <td class="p-1 " @onclick="@(() => ReplaceObjectSelected(replace))">@replace.ColumnName</td>
-                    </tr>
-                }
-            </tbody>
-        </table>
+}
+@if (ShowLoading)
+{
 
+
+    <div class="row css-load-parent">
+        <div class="col text-center my-auto">
+            <div class="cssload-loader-inner">
+                <div class="cssload-cssload-loader-line-wrap-wrap">
+                    <div class="cssload-loader-line-wrap"></div>
+                </div>
+                <div class="cssload-cssload-loader-line-wrap-wrap">
+                    <div class="cssload-loader-line-wrap"></div>
+                </div>
+                <div class="cssload-cssload-loader-line-wrap-wrap">
+                    <div class="cssload-loader-line-wrap"></div>
+                </div>
+                <div class="cssload-cssload-loader-line-wrap-wrap">
+                    <div class="cssload-loader-line-wrap"></div>
+                </div>
+                <div class="cssload-cssload-loader-line-wrap-wrap">
+                    <div class="cssload-loader-line-wrap"></div>
+                </div>
+            </div>
+        </div>
     </div>
-</div>
+}
 @code{
     [CascadingParameter]
     public EventCallback<string> UpdateStatus { get; set; }
@@ -127,6 +180,7 @@
     private bool IsColumnSelectDisabled => string.IsNullOrWhiteSpace(SelectedColumn) ||
         string.IsNullOrWhiteSpace(SelectedReplaceType);
     private bool IsRemoveReplaceDisabled => SelectedReplaceObject == null;
+    private bool ShowLoading { get; set; }
     private string SelectedTable { get; set; } = "";
     private string SelectedColumn { get; set; } = "";
     private List<string> ReplaceTypes { get; set; } = new List<string>();
@@ -135,6 +189,7 @@
     private ReplaceObject SelectedReplaceObject { get; set; } = null!;
     private string BeforeAnonymize { get; set; } = "";
     private string AfterAnonymize { get; set; } = "";
+    private DBAnonymizerConfigs SavedConfigs { get; set; } = new DBAnonymizerConfigs();
 
     protected override void OnInitialized()
     {
@@ -150,6 +205,13 @@
         };
         MessageService.MessageReceived += UpdateUI;
         base.OnInitialized();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        SavedConfigs = await LocalStorage.GetItemAsync<DBAnonymizerConfigs>(nameof(DBAnonymizerConfigs));
+        await InvokeAsync(() => StateHasChanged());
+        await base.OnAfterRenderAsync(firstRender);
     }
 
     private async Task Connect()
@@ -184,7 +246,7 @@
 
     private void AddToReplaceList()
     {
-        if (!ReplaceObjects.Any(_ => _.ColumnName == SelectedColumn))
+        if (!ReplaceObjects.Any(_ => _.ColumnName == SelectedColumn && _.TableName == SelectedTable))
         {
             ReplaceObjects.Add(new ReplaceObject
             {
@@ -210,9 +272,11 @@
     {
         try
         {
+            ShowLoading = true;
             var shouldExecute = await JSRuntime.InvokeAsync<bool>("shouldExecute");
             if (shouldExecute)
             {
+                await InvokeAsync(() => StateHasChanged());
                 await Service.ExecuteReplace(ReplaceObjects, ConnectionString);
                 ReplaceObjects.Clear();
                 SelectedReplaceObject = null!;
@@ -222,14 +286,60 @@
         {
             MessageService.SendMessage(e.ToString());
         }
+        finally
+        {
+            ReplaceObjects.Clear();
+            SelectedReplaceObject = null!;
+            ShowLoading = false;
+            StatusMessage = "";
+        }
     }
 
     private async Task UpdateUI(object sender, MessageEventArgs args)
     {
         StatusMessage = args.Message;
         await InvokeAsync(() => StateHasChanged());
-        await Task.Delay(TimeSpan.FromSeconds(3));
-        StatusMessage = string.Empty;
-        await InvokeAsync(() => StateHasChanged());
+        if (!ShowLoading)
+        {
+            await Task.Delay(TimeSpan.FromSeconds(3));
+            StatusMessage = string.Empty;
+            await InvokeAsync(() => StateHasChanged());
+        }
+    }
+
+    public async Task KeyPressed(KeyboardEventArgs e)
+    {
+        if (e.Code == "Enter" || e.Code == "NumpadEnter")
+        {
+            await Task.Delay(TimeSpan.FromMilliseconds(500));
+            await Connect();
+        }
+    }
+
+    private async Task Save()
+    {
+        var data = new DBAnonymizerConfig
+        {
+            ReplaceObjects = ReplaceObjects
+        };
+        var modalParams = new ModalParameters();
+        modalParams.Add("SaveConfigData", data);
+        var modal = Modal.Show<SaveModal>("Save replace data", modalParams, new ModalOptions
+        {
+            DisableBackgroundCancel = true,
+            HideCloseButton = true,
+            HideHeader = true
+        });
+        var result = await modal.Result;
+        if (!result.Cancelled)
+        {
+            Console.WriteLine(result.Data);
+        }
+
+    }
+
+    private void LoadConfig(DBAnonymizerConfig config)
+    {
+        ReplaceObjects = config.ReplaceObjects;
     }
 }
