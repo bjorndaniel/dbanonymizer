@@ -18,7 +18,6 @@ namespace DBAnonymizer
         private readonly string _primaryKeyCommand = @"SELECT 
                                                    column_name as PRIMARYKEYCOLUMN
                                                  FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS AS TC 
-
                                                  INNER JOIN INFORMATION_SCHEMA.KEY_COLUMN_USAGE AS KU
                                                      ON TC.CONSTRAINT_TYPE = 'PRIMARY KEY' 
                                                      AND TC.CONSTRAINT_NAME = KU.CONSTRAINT_NAME 
@@ -47,18 +46,18 @@ namespace DBAnonymizer
                     _messageService.SendMessage($"Connected to {connection.Database}");
                     table = await connection.GetSchemaAsync("Tables", restrictionValues: new string[] { null!, null!, null!, "BASE TABLE" }).ConfigureAwait(false);
                 }
-
+                var result = new List<string>();
+                foreach (DataRow row in table.Rows)
+                {
+                    result.Add(row["TABLE_NAME"]?.ToString() ?? "");
+                }
+                return result;
             }
             catch (SqlException e)
             {
                 _messageService.SendMessage(e.ToString());
             }
-            var result = new List<string>();
-            foreach (DataRow row in table.Rows)
-            {
-                result.Add(row["TABLE_NAME"]?.ToString() ?? "");
-            }
-            return result;
+            return new List<string>();
         }
 
         public async Task ExecuteReplace(List<ReplaceObject> replaceObjects, string connectionString)

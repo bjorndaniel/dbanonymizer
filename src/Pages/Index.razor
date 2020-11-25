@@ -1,6 +1,7 @@
 ﻿@page "/"
 @inject AnonymizerService Service
 @inject MessageService MessageService
+@inject IJSRuntime JSRuntime
 <div class="row">
     <div class="col text-center">
         <h2>DB anonymizer</h2>
@@ -14,7 +15,7 @@
             <label for="connectionString" class="col-sm-3 col-form-label px-0">Connection string:</label>
             <div class="col-sm-9 px-0">
                 <input type="password" class="form-control" id="connectionString"
-                       placeholder="Data Source=...;Initial Catalog=...;user=...;password=...;" @bind="@ConnectionString">
+                    placeholder="Data Source=...;Initial Catalog=...;user=...;password=...;" @bind="@ConnectionString">
             </div>
         </div>
 
@@ -23,7 +24,13 @@
         <button class="btn btn-primary mb-2" disabled="@IsConnectDisabled" @onclick="@(async () => await Connect())">
             Connect
         </button>
-        <button class="btn btn-danger mb-2" @onclick="@(async () => await ExecuteReplace())">Execute</button>
+        <button class="btn btn-danger mb-2" disabled="@IsExecuteDisabled"
+            @onclick="@(async () => await ExecuteReplace())">Execute</button>
+    </div>
+</div>
+<div class="row">
+    <div class="col text-center">
+        <p>@StatusMessage</p>
     </div>
 </div>
 <div class="row">
@@ -66,15 +73,18 @@
             <small id="replaceHelp" class="form-text text-muted-app">Select the value type to replace.</small>
         </div>
         <div class="form-group">
-            <button class="btn btn-success w-100" @onclick="@(() => AddToReplaceList())" disabled="@IsColumnSelectDisabled"><i class="oi oi-plus"></i></button>
+            <button class="btn btn-success w-100" @onclick="@(() => AddToReplaceList())"
+                disabled="@IsColumnSelectDisabled"><i class="oi oi-plus"></i></button>
             <small class="form-text text-muted-app">Add to replace list.</small>
         </div>
         <div class="form-group">
-            <button class="btn btn-warning w-100" disabled="@IsRemoveReplaceDisabled" @onclick="@(() => RemoveFromReplaceList())"><i class="oi oi-minus"></i></button>
+            <button class="btn btn-warning w-100" disabled="@IsRemoveReplaceDisabled"
+                @onclick="@(() => RemoveFromReplaceList())"><i class="oi oi-minus"></i></button>
             <small class="form-text text-muted-app">Remove from replace list.</small>
         </div>
         <div class="form-group">
-            <button class="btn btn-primary w-100" disabled="@IsColumnSelectDisabled" @onclick="@(async () => await ShowExample())"><i class="oi oi-random"></i></button>
+            <button class="btn btn-primary w-100" disabled="@IsColumnSelectDisabled"
+                @onclick="@(async () => await ShowExample())"><i class="oi oi-random"></i></button>
             <small class="form-text text-muted-app">Show example for column.</small>
         </div>
         <div class="form-group">
@@ -108,11 +118,14 @@
 @code{
     [CascadingParameter]
     public EventCallback<string> UpdateStatus { get; set; }
+    private string StatusMessage { get; set; } = "";
     private string ConnectionString { get; set; } = "";
     private IEnumerable<String> TableNames { get; set; } = new List<string>();
     private IEnumerable<String> ColumnNames { get; set; } = new List<string>();
     private bool IsConnectDisabled => string.IsNullOrWhiteSpace(ConnectionString);
-    private bool IsColumnSelectDisabled => string.IsNullOrWhiteSpace(SelectedColumn) || string.IsNullOrWhiteSpace(SelectedReplaceType);
+    private bool IsExecuteDisabled => !ReplaceObjects?.Any() ?? true;
+    private bool IsColumnSelectDisabled => string.IsNullOrWhiteSpace(SelectedColumn) ||
+        string.IsNullOrWhiteSpace(SelectedReplaceType);
     private bool IsRemoveReplaceDisabled => SelectedReplaceObject == null;
     private string SelectedTable { get; set; } = "";
     private string SelectedColumn { get; set; } = "";
@@ -126,7 +139,7 @@
     protected override void OnInitialized()
     {
         ReplaceTypes = new List<string>
-{
+        {
             "Email",
             "First and last name",
             "First name",
@@ -135,6 +148,7 @@
             "Phonenumber",
             "Username",
         };
+        MessageService.MessageReceived += UpdateUI;
         base.OnInitialized();
     }
 
@@ -196,14 +210,26 @@
     {
         try
         {
-            await Service.ExecuteReplace(ReplaceObjects, ConnectionString);
-            ReplaceObjects.Clear();
-            SelectedReplaceObject = null!;
-
+            var shouldExecute = await JSRuntime.InvokeAsync<bool>("shouldExecute");
+            if (shouldExecute)
+            {
+                await Service.ExecuteReplace(ReplaceObjects, ConnectionString);
+                ReplaceObjects.Clear();
+                SelectedReplaceObject = null!;
+            }
         }
         catch (Exception e)
         {
             MessageService.SendMessage(e.ToString());
         }
+    }
+
+    private async Task UpdateUI(object sender, MessageEventArgs args)
+    {
+        StatusMessage = args.Message;
+        await InvokeAsync(() => StateHasChanged());
+        await Task.Delay(TimeSpan.FromSeconds(3));
+        StatusMessage = string.Empty;
+        await InvokeAsync(() => StateHasChanged());
     }
 }
