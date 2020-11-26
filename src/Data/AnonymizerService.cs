@@ -102,6 +102,7 @@ namespace DBAnonymizer
             foreach (var replacer in replaceObjects)
             {
                 var pkColumn = await GetPrimaryKeyColumn(replacer.TableName, connectionString).ConfigureAwait(false);
+                var pkColumnType = await GetColumnProperties(pkColumn, replacer.TableName, connectionString).ConfigureAwait(false);
                 int counter = 0;
                 _messageService.SendMessage($"Starting replacements for {replacer.ColumnName}");
                 using (var connection = new SqlConnection(connectionString))
@@ -124,10 +125,17 @@ namespace DBAnonymizer
                             {
                                 value = reader.GetString(0).Replace("'", "''");
                             }
-                            var primaryKey = 0;
+                            dynamic primaryKey; // can be either a string or an int
                             try
                             {
-                                primaryKey = reader.GetInt32(reader.GetOrdinal(pkColumn));
+                                if (pkColumnType.Contains("char"))
+                                {
+                                    primaryKey = "'" + reader.GetString(pkColumn) + "'";
+                                }
+                                else
+                                {
+                                    primaryKey = reader.GetInt32(reader.GetOrdinal(pkColumn));
+                                }
                             }
                             catch (InvalidCastException e)
                             {
@@ -227,8 +235,11 @@ namespace DBAnonymizer
 
         public async Task<string> GetColumnProperties(string selectedColumn, string selectedTable, string connectionString)
         {
+            var columnRestrictions = new string[4];
+            columnRestrictions[2] = selectedTable.Split(".").Last();
+
             using (var connection = new SqlConnection(connectionString))
-            using (var command = new SqlCommand($"SELECT DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='{selectedTable}' AND COLUMN_NAME = '{selectedColumn}'"))
+            using (var command = new SqlCommand($"SELECT DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='{columnRestrictions[2]}' AND COLUMN_NAME = '{selectedColumn}'"))
             {
                 await connection.OpenAsync().ConfigureAwait(false);
                 command.Connection = connection;
