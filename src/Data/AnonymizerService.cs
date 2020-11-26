@@ -58,7 +58,7 @@ namespace DBAnonymizer
                 }
                 return result;
             }
-            catch (SqlException e)
+            catch (Exception e)
             {
                 _messageService.SendMessage(e.ToString());
             }

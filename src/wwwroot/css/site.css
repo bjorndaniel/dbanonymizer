@@ -281,7 +281,6 @@ body {
   max-width: 4rem;
   display: inline;
 }
-
 table tbody td a {
   text-decoration: underline;
 }
@@ -311,4 +310,20 @@ table tbody td a:hover {
 }
 .status-row {
   min-height: 2.5rem;
+}
+.row-selected {
+  background-color: rgb(0, 110, 255) !important;
+}
+.form-group-wrap {
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.dropdown-item {
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+}
+.text-bold {
+  padding-left: 2px;
+  font-weight: bold;
 }

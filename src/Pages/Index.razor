@@ -55,13 +55,20 @@
 {
     <div class="row">
         <div class="col-12 col-md-6 col-lg-3 px-1">
-            <div class="border h-100 p-1">
+            <div class="border h-100 p-1 table-responsive">
                 <h5>Tables</h5>
+                <div class="input-group mb-3">
+                    <input type="text" class="form-control" placeholder="Filter tables on enter" aria-label="Filter"
+                        @bind="@TableFilter" @onkeypress="FilterTables">
+                    <div class="input-group-append">
+                        <span class="input-group-text"><i class="oi oi-question-mark pb-2"></i></span>
+                    </div>
+                </div>
                 <table class="table-dark table-striped table-hover w-100">
                     <tbody>
                         @foreach (var tableName in TableNames.OrderBy(_ => _))
                         {
-                            <tr class="p-2">
+                            <tr class="p-2 @(SelectedTable == tableName ? "row-selected" : "")">
                                 <td class="p-1" @onclick="@(async () => await TableSelected(tableName))">@tableName</td>
                             </tr>
                         }
@@ -70,14 +77,21 @@
             </div>
         </div>
         <div class="col-12 col-md-6 col-lg-3 px-1">
-            <div class="border h-100 p-1">
+            <div class="border h-100 p-1 table-responsive">
                 <h5>Columns</h5>
+                <div class="input-group mb-3">
+                    <input type="text" class="form-control" placeholder="Filter columns on enter" aria-label="Filter"
+                        @bind="@ColumnFilter" @onkeypress="FilterColumns">
+                    <div class="input-group-append">
+                        <span class="input-group-text"><i class="oi oi-question-mark pb-2"></i></span>
+                    </div>
+                </div>
                 <table class="table-dark table-striped table-hover w-100">
                     <tbody>
                         @foreach (var columnName in ColumnNames.OrderBy(_ => _))
                         {
-                            <tr class="p-2">
-                                <td class="p-1" @onclick="@(() => ColumnSelected(columnName))">@columnName</td>
+                            <tr class="p-2 @(SelectedColumn == columnName ? "row-selected" : "")">
+                                <td class="p-1 td-overflow" @onclick="@(() => ColumnSelected(columnName))">@columnName</td>
                             </tr>
                         }
                     </tbody>
@@ -88,17 +102,22 @@
             <h5>Replace settings</h5>
             <div class="form-group">
                 <label for="replaceType">Replace type</label>
-                <select class="form-control" id="lfmtype" aria-describedby="replaceHelp" @bind="SelectedReplaceType">
-                    @foreach (var type in ReplaceTypes)
-                    {
-                        <option value="@type">@type</option>
-                    }
-                </select>
+        <button type="button" class="btn btn-secondary dropdown-toggle mb-2 w-100" data-toggle="dropdown" aria-haspopup="true"
+            aria-expanded="false">
+            Select replace type
+        </button>
+        <div class="dropdown-menu">
+            @foreach (var type in ReplaceTypes)
+            {
+                <a class="dropdown-item" href="#" @onclick:preventDefault
+                        @onclick="@(() => SetReplaceType(type))">@type <i class="oi @(GetReplaceIcon(type))"/><span class="text-bold">@(GetReplaceText(type))</span></a>
+            }
+            </div>
                 <small id="replaceHelp" class="form-text text-muted-app">Select the value type to replace.</small>
             </div>
             <div class="form-group">
                 <button class="btn btn-success w-100" @onclick="@(() => AddToReplaceList())"
-                    disabled="@IsColumnSelectDisabled"><i class="oi oi-plus"></i></button>
+                                                                            disabled="@IsColumnSelectDisabled"><i class="oi oi-plus"></i></button>
                 <small class="form-text text-muted-app">Add to replace list.</small>
             </div>
             <div class="form-group">
@@ -110,6 +129,10 @@
                 <button class="btn btn-primary w-100" disabled="@IsColumnSelectDisabled"
                     @onclick="@(async () => await ShowExample())"><i class="oi oi-random"></i></button>
                 <small class="form-text text-muted-app">Show example for column.</small>
+            </div>
+              <div class="form-group">
+                <label>Selected replace type:</label>
+                <h5>@SelectedReplaceType</h5>
             </div>
             <div class="form-group">
                 <label>Selected column:</label>
@@ -125,7 +148,7 @@
             </div>
         </div>
         <div class="col-12 col-md-6 col-lg-3 px-1">
-            <div class="border h-100 p-1">
+            <div class="border h-100 p-1 table-responsive">
                 <h5>Selected</h5>
                 <table class="table-dark table-striped table-hover w-100">
                     <tbody>
@@ -133,7 +156,7 @@
                         {
                             <tr class="p-2">
                                 <td class="p-1 " @onclick="@(() => ReplaceObjectSelected(replace))">@replace.ColumnName
-                                    (@replace.TableName)</td>
+                                    (@replace.TableName)<i class="oi @(GetReplaceIcon(replace.ReplaceType)) pb-1 pl-1"/><span class="text-bold pb-1 pl-1">@(GetReplaceText(replace.ReplaceType))</span></td>
                             </tr>
                         }
                     </tbody>
@@ -178,10 +201,12 @@
     private bool IsConnectDisabled => string.IsNullOrWhiteSpace(ConnectionString);
     private bool IsExecuteDisabled => !ReplaceObjects?.Any() ?? true;
     private bool IsColumnSelectDisabled => string.IsNullOrWhiteSpace(SelectedColumn) ||
-        string.IsNullOrWhiteSpace(SelectedReplaceType);
+       string.IsNullOrWhiteSpace(SelectedReplaceType);
     private bool IsRemoveReplaceDisabled => SelectedReplaceObject == null;
     private bool ShowLoading { get; set; }
     private string SelectedTable { get; set; } = "";
+    private string TableFilter { get; set; } = "";
+    private string ColumnFilter { get; set; } = "";
     private string SelectedColumn { get; set; } = "";
     private List<string> ReplaceTypes { get; set; } = new List<string>();
     private string SelectedReplaceType { get; set; } = "";
@@ -311,7 +336,7 @@
     {
         if (e.Code == "Enter" || e.Code == "NumpadEnter")
         {
-            await Task.Delay(TimeSpan.FromMilliseconds(500));
+            await Task.Delay(TimeSpan.FromMilliseconds(200));
             await Connect();
         }
     }
@@ -342,4 +367,51 @@
     {
         ReplaceObjects = config.ReplaceObjects;
     }
+
+    private async Task FilterTables()
+    {
+        await Task.Delay(TimeSpan.FromMilliseconds(200));
+        TableNames = TableNames.Where(_ => _.ToLower().Contains(TableFilter));
+    }
+
+    private async Task FilterColumns()
+    {
+        await Task.Delay(TimeSpan.FromMilliseconds(200));
+        ColumnNames = ColumnNames.Where(_ => _.ToLower().Contains(ColumnFilter));
+    }
+
+   private void SetReplaceType(string type)
+   {
+       SelectedReplaceType = type;
+   }
+   private string GetReplaceIcon(string type)
+   {
+       switch(type)
+       {
+            case "Email":
+                return "oi-envelope-closed";
+            case "Personal number (yyyymmdd-xxxx)":
+                return "oi-credit-card";
+            case "Phonenumber":
+                return "oi-phone";
+            case "Username":
+                return "oi-person";
+            default:
+                return "";
+       }
+   }
+   private string GetReplaceText(string type)
+   {
+       switch(type)
+       {
+            case "First name":
+                return "F";
+            case "Last name":
+                return "L";
+            case "First and last name":
+                return "F&L";
+            default:
+                return "";
+       }
+   }
 }
