@@ -22,7 +22,6 @@ jobs:
         with:
           dotnet-version: 5.0.214
 
-      
       - name: Build Blazor App
         run: dotnet publish -c Release -o published
 
