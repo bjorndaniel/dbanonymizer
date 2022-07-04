@@ -24,7 +24,7 @@ jobs:
           working-directory: /src
 
       - name: Build Blazor App
-        run: dotnet publish -c Release -o published
+        run: dotnet publish -c Release -o published -s /src/DBAnonymizer.csproj
 
       - name: Build And Deploy
         id: builddeploy
