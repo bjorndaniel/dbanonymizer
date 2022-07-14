@@ -23,22 +23,22 @@ jobs:
         uses: actions/setup-dotnet@v1
         with:
           dotnet-version: 6.0.302
-          working-directory: ./src
 
       - name: Build Blazor App
-        run:  dotnet publish DBAnonymizer.csproj -c Release -o published
-        working-directory: ./src
+        run:  dotnet publish ./src/DBAnonymizer.csproj -c Release -o published
         
 
       - name: Build And Deploy
         id: builddeploy
-        uses: Azure/static-web-apps-deploy@v0.0.1-preview
+        uses: Azure/static-web-apps-deploy@v1
         with:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_ZEALOUS_DESERT_06134B303 }}
           repo_token: ${{ secrets.GITHUB_TOKEN }} # Used for Github integrations (i.e. PR comments)
           action: "upload"
           ###### Repository/Build Configurations - These values can be configured to match you app requirements. ######
-          app_location: "./src" # App source code path
+          app_location: "published/wwwroot" # App source code path
+          api_location: "" # Api source code path - optional
+          output_location: "published/wwwroot" # Built app content directory - optionaluilt app content directory - optional
           ###### End of Repository/Build Configurations ######
 
   close_pull_request_job:

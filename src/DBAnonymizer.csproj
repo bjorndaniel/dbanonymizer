@@ -4,6 +4,13 @@
     <TargetFramework>net6.0</TargetFramework>
     <nullable>enable</nullable>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="published\**" />
+    <Content Remove="published\**" />
+    <EmbeddedResource Remove="published\**" />
+    <None Remove="published\**" />
+  </ItemGroup>
 <ItemGroup>
   <PackageReference Include="Blazored.LocalStorage" Version="4.2.0" />
   <PackageReference Include="Blazored.Modal" Version="6.0.1" />
