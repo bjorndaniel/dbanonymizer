@@ -43,10 +43,6 @@
     [Parameter]
     public DBAnonymizerConfig SaveConfigData { get; set; } = null!;
 
-    protected override void OnInitialized()
-    {
-    }
-
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         await JSRuntime.InvokeAsync<string>("showJson", JsonSerializer.Serialize(SaveConfigData));
@@ -62,12 +58,10 @@
         }
         saved.Configs.Add(SaveConfigData);
         await LocalStorage.SetItemAsync("DBAnonymizerConfigs", JsonSerializer.Serialize(saved));
-        await BlazoredModal.Close(ModalResult.Ok<bool>(true));
+        await BlazoredModal.CloseAsync(ModalResult.Ok<bool>(true));
     }
 
-    private async Task Cancel()
-    {
-        await BlazoredModal.Close(ModalResult.Cancel());
-    }
+    private async Task Cancel() =>
+        await BlazoredModal.CloseAsync(ModalResult.Cancel());
 
 }
