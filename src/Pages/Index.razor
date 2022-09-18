@@ -1,4 +1,5 @@
 ﻿@page "/"
+@using System.Web
 @inject AnonymizerService Service
 @inject MessageService MessageService
 @inject IJSRuntime JSRuntime
@@ -127,7 +128,7 @@
             </div>
             <div class="form-group">
                 <button class="btn btn-primary w-100" disabled="@IsColumnSelectDisabled"
-                    @onclick="@(async () => await ShowExample())"><i class="oi oi-random"></i></button>
+                    @onclick="@(async () => await ShowExampleAsync())"><i class="oi oi-random"></i></button>
                 <small class="form-text text-muted-app">Show example for column.</small>
             </div>
               <div class="form-group">
@@ -227,6 +228,7 @@
             "Personal number (yyyymmdd-xxxx)",
             "Phonenumber",
             "Username",
+            "Firstname.Lastname"
         };
         MessageService.MessageReceived += UpdateUI;
         base.OnInitialized();
@@ -235,8 +237,7 @@
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         SavedConfigs = await LocalStorage.GetItemAsync<DBAnonymizerConfigs>(nameof(DBAnonymizerConfigs));
-        await InvokeAsync(() => StateHasChanged());
-        await base.OnAfterRenderAsync(firstRender);
+        await InvokeAsync(StateHasChanged);
     }
 
     private async Task Connect()
@@ -255,7 +256,7 @@
         SelectedColumn = columnName;
     }
 
-    private async Task ShowExample()
+    private async Task ShowExampleAsync()
     {
         try
         {
@@ -384,6 +385,7 @@
    {
        SelectedReplaceType = type;
    }
+    
    private string GetReplaceIcon(string type)
    {
        switch(type)
@@ -400,6 +402,7 @@
                 return "";
        }
    }
+    
    private string GetReplaceText(string type)
    {
        switch(type)
@@ -410,6 +413,8 @@
                 return "L";
             case "First and last name":
                 return "F&L";
+            case "Firstname.Lastname":
+                return "F.L";
             default:
                 return "";
        }

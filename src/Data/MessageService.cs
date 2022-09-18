@@ -1,15 +1,9 @@
-using System;
-using System.Threading.Tasks;
+namespace DBAnonymizer;
 
-namespace DBAnonymizer
+public class MessageService
 {
-    public class MessageService
-    {
-        public event Func<object, MessageEventArgs, Task>? MessageReceived;
+    public event Func<object, MessageEventArgs, Task>? MessageReceived;
 
-        public void SendMessage(string message)
-        {
-            MessageReceived?.Invoke(this, new MessageEventArgs { Message = message });
-        }
-    }
+    public void SendMessage(string message) => 
+        MessageReceived?.Invoke(this, new MessageEventArgs { Message = message });
 }

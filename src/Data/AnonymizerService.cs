@@ -1,12 +1,3 @@
-using Microsoft.Data.SqlClient;
-using System;
-using System.Collections.Generic;
-using System.Data;
-using System.Linq;
-using System.Net.Http;
-using System.Text.Json;
-using System.Threading.Tasks;
-
 namespace DBAnonymizer
 {
     public class AnonymizerService
@@ -288,12 +279,15 @@ namespace DBAnonymizer
                 case "Personal number (yyyymmdd-xxxx)":
                     example = $"{names[counter].dob.date.ToString("yyyyMMdd")}-{_random.Next(1, 9)}{_random.Next(1, 9)}{_random.Next(1, 9)}{_random.Next(1, 9)}";
                     break;
+                case "Firstname.Lastname":
+                    example = $"{names[counter].name.first}.{names[counter].name.last}";
+                    break;
                 default:
                     break;
             }
 
             using (var connection = new SqlConnection(connectionString))
-            using (var command = new SqlCommand($"SELECT {selectedColumn} FROM {selectedTable}", connection))
+            using (var command = new SqlCommand($"SELECT {selectedColumn} FROM {selectedTable} where {selectedColumn} IS NOT NULL AND {selectedColumn} <> ''", connection))
             using (var replaceCommand = new SqlCommand())
             {
                 await connection.OpenAsync().ConfigureAwait(false);

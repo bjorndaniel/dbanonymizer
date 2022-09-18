@@ -30,16 +30,23 @@
         <div class="row mt-auto mb-2">
             <div class="col text-end">
                 <button @onclick="@(async () => await SaveConfig())"
-                    class="btn btn-primary float-right mx-2">Save</button>
+                        class="btn btn-primary float-right mx-2">
+                    Save
+                </button>
                 <button @onclick="@(async () => await Cancel())"
-                    class="btn btn-secondary float-right mx-2">Cancel</button>
+                        class="btn btn-secondary float-right mx-2">
+                    Cancel
+                </button>
             </div>
         </div>
     </div>
 </div>
+
 @code {
+
     [CascadingParameter]
     BlazoredModalInstance BlazoredModal { get; set; } = null!;
+
     [Parameter]
     public DBAnonymizerConfig SaveConfigData { get; set; } = null!;
 
@@ -51,13 +58,12 @@
 
     private async Task SaveConfig()
     {
-        var saved = await LocalStorage.GetItemAsync<DBAnonymizerConfigs>(nameof(DBAnonymizerConfigs));
-        if (saved == null)
+        var saved = await LocalStorage.GetItemAsync<DBAnonymizerConfigs>(nameof(DBAnonymizerConfigs)) ?? new DBAnonymizerConfigs();
+        if (SaveConfigData != null)
         {
-            saved = new DBAnonymizerConfigs();
+            saved.Configs.Add(SaveConfigData);
         }
-        saved.Configs.Add(SaveConfigData);
-        await LocalStorage.SetItemAsync("DBAnonymizerConfigs", JsonSerializer.Serialize(saved));
+        await LocalStorage.SetItemAsync(nameof(DBAnonymizerConfigs), saved);
         await BlazoredModal.CloseAsync(ModalResult.Ok<bool>(true));
     }
 

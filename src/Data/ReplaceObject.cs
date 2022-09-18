@@ -1,5 +1,4 @@
-﻿using System.Linq;
-namespace DBAnonymizer
+﻿namespace DBAnonymizer
 {
     public class ReplaceObject
     {

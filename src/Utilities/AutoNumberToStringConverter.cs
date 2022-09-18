@@ -1,9 +1,4 @@
 ﻿//From https://stackoverflow.com/questions/59097784/system-text-json-deserialize-json-with-automatic-casting
-using System;
-using System.Text.Json;
-using System.Text.Json.Serialization;
-
-
 namespace DBAnonymizer.Utilities
 {
     public class AutoNumberToStringConverter : JsonConverter<object>

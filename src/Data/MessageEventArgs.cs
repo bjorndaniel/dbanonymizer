@@ -1,9 +1,6 @@
-using System;
+namespace DBAnonymizer;
 
-namespace DBAnonymizer
+public class MessageEventArgs : EventArgs
 {
-    public class MessageEventArgs : EventArgs
-    {
-        public string Message { get; set; } = "";
-    }
+    public string Message { get; set; } = "";
 }
