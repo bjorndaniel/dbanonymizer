@@ -168,6 +168,10 @@ namespace DBAnonymizer
                                     var pNumber = $"{names[counter].dob.date.ToString("yyyyMMdd")}-{_random.Next(1, 9)}{_random.Next(1, 9)}{_random.Next(1, 9)}{_random.Next(1, 9)}";
                                     commands.Add($"UPDATE {replacer.TableNameToSql()} SET {replacer.ColumnName} = '{pNumber}' WHERE {pkColumn} = {primaryKey}");
                                     break;
+                                case "Firstname.Lastname":
+                                    var firstdotlast = $"{names[counter].name.first}.{names[counter].name.last}".Replace("'", "''");
+                                    commands.Add($"UPDATE {replacer.TableNameToSql()} SET {replacer.ColumnName} = '{firstdotlast}' WHERE {pkColumn} = {primaryKey}");
+                                    break;
                                 default:
                                     break;
                             }

@@ -18,8 +18,8 @@
             <label for="connectionString" class="col-sm-3 col-form-label px-0">Connection string:</label>
             <div class="col-sm-9 px-0">
                 <input type="password" class="form-control" id="connectionString" @onkeypress="@KeyPressed"
-                    placeholder="Data Source=...;Initial Catalog=...;user=...;password=...;" @bind="@ConnectionString"
-                    @onpaste="@(() => StateHasChanged())">
+                       placeholder="Data Source=...;Initial Catalog=...;user=...;password=...;" @bind="@ConnectionString"
+                       @onpaste="@(() => StateHasChanged())">
             </div>
         </div>
 
@@ -29,10 +29,12 @@
             Connect
         </button>
         <button class="btn btn-danger mb-2" disabled="@IsExecuteDisabled"
-            @onclick="@(async () => await ExecuteReplace())">Execute</button>
+                @onclick="@(async () => await ExecuteReplace())">
+            Execute
+        </button>
         <button class="btn btn-success mb-2" @onclick="@(async () => await Save())">Save config</button>
         <button type="button" class="btn btn-secondary dropdown-toggle mb-2" data-toggle="dropdown" aria-haspopup="true"
-            aria-expanded="false">
+                aria-expanded="false">
             Load config
         </button>
         <div class="dropdown-menu">
@@ -41,18 +43,20 @@
                 foreach (var config in SavedConfigs.Configs)
                 {
                     <a class="dropdown-item" href="#" @onclick:preventDefault
-                        @onclick="@(() => LoadConfig(config))">@config.Name</a>
+                                                      @onclick="@(() => LoadConfig(config))">
+                        @config.Name
+                    </a>
                 }
             }
-                </div>
-            </div>
         </div>
-        <div class="row status-row">
-            <div class="col text-center">
-                <p>@StatusMessage</p>
-            </div>
-        </div>
-        @if (!ShowLoading)
+    </div>
+</div>
+<div class="row status-row">
+    <div class="col text-center">
+        <p>@StatusMessage</p>
+    </div>
+</div>
+@if (!ShowLoading)
 {
     <div class="row">
         <div class="col-12 col-md-6 col-lg-3 px-1">
@@ -60,19 +64,21 @@
                 <h5>Tables</h5>
                 <div class="input-group mb-3">
                     <input type="text" class="form-control" placeholder="Filter tables on enter" aria-label="Filter"
-                        @bind="@TableFilter" @onkeypress="FilterTables">
+                           @bind="@TableFilter" @onkeypress="FilterTables">
                     <div class="input-group-append">
-                        <span class="input-group-text"><i class="oi oi-question-mark pb-2"></i></span>
+                        <span class="input-group-text">
+                            <i class="oi oi-question-mark pb-2"></i>
+                        </span>
                     </div>
                 </div>
                 <table class="table-dark table-striped table-hover w-100">
                     <tbody>
-                        @foreach (var tableName in TableNames.OrderBy(_ => _))
-                        {
-                            <tr class="p-2 @(SelectedTable == tableName ? "row-selected" : "")">
-                                <td class="p-1" @onclick="@(async () => await TableSelected(tableName))">@tableName</td>
-                            </tr>
-                        }
+                    @foreach (var tableName in TableNames.OrderBy(_ => _))
+                    {
+                        <tr class="p-2 @(SelectedTable == tableName ? "row-selected" : "")">
+                            <td class="p-1" @onclick="@(async () => await TableSelected(tableName))">@tableName</td>
+                        </tr>
+                    }
                     </tbody>
                 </table>
             </div>
@@ -82,19 +88,21 @@
                 <h5>Columns</h5>
                 <div class="input-group mb-3">
                     <input type="text" class="form-control" placeholder="Filter columns on enter" aria-label="Filter"
-                        @bind="@ColumnFilter" @onkeypress="FilterColumns">
+                           @bind="@ColumnFilter" @onkeypress="FilterColumns">
                     <div class="input-group-append">
-                        <span class="input-group-text"><i class="oi oi-question-mark pb-2"></i></span>
+                        <span class="input-group-text">
+                            <i class="oi oi-question-mark pb-2"></i>
+                        </span>
                     </div>
                 </div>
                 <table class="table-dark table-striped table-hover w-100">
                     <tbody>
-                        @foreach (var columnName in ColumnNames.OrderBy(_ => _))
-                        {
-                            <tr class="p-2 @(SelectedColumn == columnName ? "row-selected" : "")">
-                                <td class="p-1 td-overflow" @onclick="@(() => ColumnSelected(columnName))">@columnName</td>
-                            </tr>
-                        }
+                    @foreach (var columnName in ColumnNames.OrderBy(_ => _))
+                    {
+                        <tr class="p-2 @(SelectedColumn == columnName ? "row-selected" : "")">
+                            <td class="p-1 td-overflow" @onclick="@(() => ColumnSelected(columnName))">@columnName</td>
+                        </tr>
+                    }
                     </tbody>
                 </table>
             </div>
@@ -103,35 +111,50 @@
             <h5>Replace settings</h5>
             <div class="form-group">
                 <label for="replaceType">Replace type</label>
-        <button type="button" class="btn btn-secondary dropdown-toggle mb-2 w-100" data-toggle="dropdown" aria-haspopup="true"
-            aria-expanded="false">
-            Select replace type
-        </button>
-        <div class="dropdown-menu">
-            @foreach (var type in ReplaceTypes)
-            {
-                <a class="dropdown-item" href="#" @onclick:preventDefault
-                        @onclick="@(() => SetReplaceType(type))">@type <i class="oi @(GetReplaceIcon(type))"/><span class="text-bold">@(GetReplaceText(type))</span></a>
-            }
-            </div>
+                <button type="button" class="btn btn-secondary dropdown-toggle mb-2 w-100" data-toggle="dropdown" aria-haspopup="true"
+                        aria-expanded="false">
+                    Select replace type
+                </button>
+                <div class="dropdown-menu">
+                    @foreach (var type in ReplaceTypes)
+                    {
+                        <a class="dropdown-item" href="#" @onclick:preventDefault
+                                                          @onclick="@(() => SetReplaceType(type))">
+                            @type <i class="oi @(GetReplaceIcon(type))"/><span class="text-bold">@(GetReplaceText(type))</span>
+                        </a>
+                    }
+                </div>
                 <small id="replaceHelp" class="form-text text-muted-app">Select the value type to replace.</small>
             </div>
             <div class="form-group">
                 <button class="btn btn-success w-100" @onclick="@(() => AddToReplaceList())"
-                                                                            disabled="@IsColumnSelectDisabled"><i class="oi oi-plus"></i></button>
+                        disabled="@IsColumnSelectDisabled">
+                    <i class="oi oi-plus"></i>
+                </button>
                 <small class="form-text text-muted-app">Add to replace list.</small>
             </div>
             <div class="form-group">
                 <button class="btn btn-warning w-100" disabled="@IsRemoveReplaceDisabled"
-                    @onclick="@(() => RemoveFromReplaceList())"><i class="oi oi-minus"></i></button>
+                        @onclick="@(() => RemoveFromReplaceList())">
+                    <i class="oi oi-minus"></i>
+                </button>
                 <small class="form-text text-muted-app">Remove from replace list.</small>
             </div>
             <div class="form-group">
                 <button class="btn btn-primary w-100" disabled="@IsColumnSelectDisabled"
-                    @onclick="@(async () => await ShowExampleAsync())"><i class="oi oi-random"></i></button>
+                        @onclick="@(async () => await ShowExampleAsync())">
+                    <i class="oi oi-random"></i>
+                </button>
                 <small class="form-text text-muted-app">Show example for column.</small>
             </div>
-              <div class="form-group">
+            <div class="form-group">
+                <button class="btn btn-danger w-100" 
+                        @onclick="@(async () => await ShowItemsToKeepModal())">
+                    <i class="oi oi-ban"></i>
+                </button>
+                <small class="form-text text-muted-app">Add values to keep.</small>
+            </div>
+            <div class="form-group">
                 <label>Selected replace type:</label>
                 <h5>@SelectedReplaceType</h5>
             </div>
@@ -153,13 +176,15 @@
                 <h5>Selected</h5>
                 <table class="table-dark table-striped table-hover w-100">
                     <tbody>
-                        @foreach (var replace in ReplaceObjects.OrderBy(_ => _.ColumnName))
-                        {
-                            <tr class="p-2">
-                                <td class="p-1 " @onclick="@(() => ReplaceObjectSelected(replace))">@replace.ColumnName
-                                    (@replace.TableName)<i class="oi @(GetReplaceIcon(replace.ReplaceType)) pb-1 pl-1"/><span class="text-bold pb-1 pl-1">@(GetReplaceText(replace.ReplaceType))</span></td>
-                            </tr>
-                        }
+                    @foreach (var replace in ReplaceObjects.OrderBy(_ => _.ColumnName))
+                    {
+                        <tr class="p-2">
+                            <td class="p-1 " @onclick="@(() => ReplaceObjectSelected(replace))">
+                                @replace.ColumnName
+                                (@replace.TableName)<i class="oi @(GetReplaceIcon(replace.ReplaceType)) pb-1 pl-1"/><span class="text-bold pb-1 pl-1">@(GetReplaceText(replace.ReplaceType))</span>
+                            </td>
+                        </tr>
+                    }
                     </tbody>
                 </table>
             </div>
@@ -168,8 +193,6 @@
 }
 @if (ShowLoading)
 {
-
-
     <div class="row css-load-parent">
         <div class="col text-center my-auto">
             <div class="cssload-loader-inner">
@@ -192,17 +215,22 @@
         </div>
     </div>
 }
+
 @code{
+
     [CascadingParameter]
     public EventCallback<string> UpdateStatus { get; set; }
+
     private string StatusMessage { get; set; } = "";
     private string ConnectionString { get; set; } = "";
     private IEnumerable<String> TableNames { get; set; } = new List<string>();
     private IEnumerable<String> ColumnNames { get; set; } = new List<string>();
     private bool IsConnectDisabled => string.IsNullOrWhiteSpace(ConnectionString);
     private bool IsExecuteDisabled => !ReplaceObjects?.Any() ?? true;
+
     private bool IsColumnSelectDisabled => string.IsNullOrWhiteSpace(SelectedColumn) ||
-       string.IsNullOrWhiteSpace(SelectedReplaceType);
+                                           string.IsNullOrWhiteSpace(SelectedReplaceType);
+
     private bool IsRemoveReplaceDisabled => SelectedReplaceObject == null;
     private bool ShowLoading { get; set; }
     private string SelectedTable { get; set; } = "";
@@ -357,11 +385,6 @@
             HideHeader = true
         });
         var result = await modal.Result;
-        if (!result.Cancelled)
-        {
-            Console.WriteLine(result.Data);
-        }
-
     }
 
     private void LoadConfig(DBAnonymizerConfig config)
@@ -381,15 +404,15 @@
         ColumnNames = ColumnNames.Where(_ => _.ToLower().Contains(ColumnFilter));
     }
 
-   private void SetReplaceType(string type)
-   {
-       SelectedReplaceType = type;
-   }
-    
-   private string GetReplaceIcon(string type)
-   {
-       switch(type)
-       {
+    private void SetReplaceType(string type)
+    {
+        SelectedReplaceType = type;
+    }
+
+    private string GetReplaceIcon(string type)
+    {
+        switch (type)
+        {
             case "Email":
                 return "oi-envelope-closed";
             case "Personal number (yyyymmdd-xxxx)":
@@ -400,13 +423,13 @@
                 return "oi-person";
             default:
                 return "";
-       }
-   }
-    
-   private string GetReplaceText(string type)
-   {
-       switch(type)
-       {
+        }
+    }
+
+    private string GetReplaceText(string type)
+    {
+        switch (type)
+        {
             case "First name":
                 return "F";
             case "Last name":
@@ -417,6 +440,20 @@
                 return "F.L";
             default:
                 return "";
-       }
-   }
+        }
+    }
+
+    private async Task ShowItemsToKeepModal()
+    {
+        var modalParams = new ModalParameters();
+        modalParams.Add("ReplaceObject", SelectedReplaceObject);
+        var modal = Modal.Show<ItemsToKeepModal>("Select items to keep", modalParams, new ModalOptions
+        {
+            DisableBackgroundCancel = true,
+            HideCloseButton = true,
+            HideHeader = true
+        });
+        var result = await modal.Result;
+    }
+
 }
