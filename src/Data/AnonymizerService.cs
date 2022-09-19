@@ -92,12 +92,17 @@ namespace DBAnonymizer
             var commands = new List<string>();
             foreach (var replacer in replaceObjects)
             {
+                string toKeep = string.Empty;
+                if(replacer.ValuesToKeep.Any())
+                {
+                     toKeep = $" AND {replacer.ColumnName} NOT IN ({string.Join(",", replacer.ValuesToKeep.Select(x => $"'{x.Value}'"))})";        
+                }
                 var pkColumn = await GetPrimaryKeyColumn(replacer.TableName, connectionString).ConfigureAwait(false);
                 var pkColumnType = await GetColumnProperties(pkColumn, replacer.TableName, connectionString).ConfigureAwait(false);
                 int counter = 0;
                 _messageService.SendMessage($"Starting replacements for {replacer.ColumnName}");
                 using (var connection = new SqlConnection(connectionString))
-                using (var command = new SqlCommand($"SELECT {replacer.ColumnName}, {pkColumn} FROM {replacer.TableNameToSql()} order by {pkColumn}", connection))
+                using (var command = new SqlCommand($"SELECT {replacer.ColumnName}, {pkColumn} FROM {replacer.TableNameToSql()} WHERE 1=1 {toKeep} ORDER BY {pkColumn}", connection))
                 using (var countCommand = new SqlCommand($"SELECT COUNT(*) FROM {replacer.TableNameToSql()}", connection))
                 {
                     await connection.OpenAsync().ConfigureAwait(false);
@@ -142,31 +147,35 @@ namespace DBAnonymizer
                             {
                                 case "Email":
                                     var mailAddress = $"{names[counter].name.first}.{names[counter].name.last}@nomail.com".Replace("'", "''");
-                                    commands.Add($"UPDATE {replacer.TableNameToSql()} SET {replacer.ColumnName} = '{mailAddress}' WHERE {pkColumn} = {primaryKey}");
+                                    commands.Add($"UPDATE {replacer.TableNameToSql()} SET {replacer.ColumnName} = '{mailAddress}' WHERE {pkColumn} = {primaryKey}{toKeep}");
                                     break;
                                 case "First name":
                                     var firstName = $"{names[counter].name.first}".Replace("'", "''");
-                                    commands.Add($"UPDATE {replacer.TableNameToSql()} SET {replacer.ColumnName} = '{firstName}' WHERE {pkColumn} = {primaryKey}");
+                                    commands.Add($"UPDATE {replacer.TableNameToSql()} SET {replacer.ColumnName} = '{firstName}' WHERE {pkColumn} = {primaryKey}{toKeep}");
                                     break;
                                 case "Last name":
                                     var lastName = $"{names[counter].name.last}".Replace("'", "''");
-                                    commands.Add($"UPDATE {replacer.TableNameToSql()} SET {replacer.ColumnName} = '{lastName}' WHERE {pkColumn} = {primaryKey}");
+                                    commands.Add($"UPDATE {replacer.TableNameToSql()} SET {replacer.ColumnName} = '{lastName}' WHERE {pkColumn} = {primaryKey}{toKeep}");
                                     break;
                                 case "First and last name":
                                     var firstlast = $"{names[counter].name.first} {names[counter].name.last}".Replace("'", "''");
-                                    commands.Add($"UPDATE {replacer.TableNameToSql()} SET {replacer.ColumnName} = '{firstlast}' WHERE {pkColumn} = {primaryKey}");
+                                    commands.Add($"UPDATE {replacer.TableNameToSql()} SET {replacer.ColumnName} = '{firstlast}' WHERE {pkColumn} = {primaryKey}{toKeep}");
                                     break;
                                 case "Username":
                                     var username = names[counter].login.username.Replace("'", "''");
-                                    commands.Add($"UPDATE {replacer.TableNameToSql()} SET {replacer.ColumnName} = '{username}' WHERE {pkColumn} = {primaryKey}");
+                                    commands.Add($"UPDATE {replacer.TableNameToSql()} SET {replacer.ColumnName} = '{username}' WHERE {pkColumn} = {primaryKey}{toKeep}");
                                     break;
                                 case "Phonenumber":
                                     var phone = names[counter].phone;
-                                    commands.Add($"UPDATE {replacer.TableNameToSql()} SET {replacer.ColumnName} = '{phone}' WHERE {pkColumn} = {primaryKey}");
+                                    commands.Add($"UPDATE {replacer.TableNameToSql()} SET {replacer.ColumnName} = '{phone}' WHERE {pkColumn} = {primaryKey}{toKeep}");
                                     break;
                                 case "Personal number (yyyymmdd-xxxx)":
                                     var pNumber = $"{names[counter].dob.date.ToString("yyyyMMdd")}-{_random.Next(1, 9)}{_random.Next(1, 9)}{_random.Next(1, 9)}{_random.Next(1, 9)}";
-                                    commands.Add($"UPDATE {replacer.TableNameToSql()} SET {replacer.ColumnName} = '{pNumber}' WHERE {pkColumn} = {primaryKey}");
+                                    commands.Add($"UPDATE {replacer.TableNameToSql()} SET {replacer.ColumnName} = '{pNumber}' WHERE {pkColumn} = {primaryKey}{toKeep}");
+                                    break;
+                                case "Firstname.Lastname":
+                                    var firstdotlast = $"{names[counter].name.first}.{names[counter].name.last}".Replace("'", "''");
+                                    commands.Add($"UPDATE {replacer.TableNameToSql()} SET {replacer.ColumnName} = '{firstdotlast}' WHERE {pkColumn} = {primaryKey}{toKeep}");
                                     break;
                                 default:
                                     break;

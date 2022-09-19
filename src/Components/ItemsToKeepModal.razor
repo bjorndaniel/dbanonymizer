@@ -1,0 +1,72 @@
+﻿@page "/ItemsToKeepModal"
+
+<div class="container">
+    <div class="large-modal">
+        <div class="row">
+            <div class="col text-center">
+                <h3>Keep items from being replaced</h3>
+                <p>Enter values below to have these kept when doing the replacing</p>
+            </div>
+        </div>
+        <div class="row h-75" >
+            <div class="col">
+                <div class="row">
+                    <div class="col justify-content-end text-right">
+                        <span style="padding-bottom: 0.2rem;">Click on the plus to add more rows</span>
+                        <i @onclick="@(() => AddItem())" class="oi oi-plus"/>
+                    </div>
+                </div>
+                @foreach (var item in ReplaceObject.ValuesToKeep)
+                {
+                    <div class="row p-1">
+                        <div class="col">
+                            <input type="text" @bind="@item.Value"/>
+                        </div>
+                        <div class="col">
+                            <i class="oi oi-trash" style="cursor:pointer;" @onclick="@(() => RemoveItem(item))"/>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+        <div class="row mt-auto mb-2">
+            <div class="col text-end">
+                <button @onclick="@(async () => await SaveItems())"
+                        class="btn btn-primary float-right mx-2">
+                    Save
+                </button>
+                <button @onclick="@(async () => await Cancel())"
+                        class="btn btn-secondary float-right mx-2">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+
+    [CascadingParameter]
+    BlazoredModalInstance BlazoredModal { get; set; } = null!;
+
+    [Parameter]
+    public ReplaceObject ReplaceObject { get; set; } = new();
+
+    private void RemoveItem(ItemToKeep item)
+    {
+        ReplaceObject.ValuesToKeep.Remove(item);
+    }
+
+    public void AddItem()
+    {
+        ReplaceObject.ValuesToKeep.Add(new ());
+    }
+
+    private async Task SaveItems()
+    {
+        await BlazoredModal.CloseAsync(ModalResult.Ok<bool>(true));
+    }
+
+    private async Task Cancel() =>
+        await BlazoredModal.CloseAsync(ModalResult.Cancel());
+}
