@@ -16,11 +16,11 @@
                         <i @onclick="@(() => AddItem())" class="oi oi-plus"/>
                     </div>
                 </div>
-                @foreach (var item in _itemsToKeep)
+                @foreach (var item in ReplaceObject.ValuesToKeep)
                 {
                     <div class="row p-1">
                         <div class="col">
-                            <input type="text" value="@item"/>
+                            <input type="text" @bind="@item.Value"/>
                         </div>
                         <div class="col">
                             <i class="oi oi-trash" style="cursor:pointer;" @onclick="@(() => RemoveItem(item))"/>
@@ -52,21 +52,18 @@
     [Parameter]
     public ReplaceObject ReplaceObject { get; set; } = new();
 
-    private List<string> _itemsToKeep = new() {"bob"};
-
-    private void RemoveItem(string item)
+    private void RemoveItem(ItemToKeep item)
     {
-        _itemsToKeep.Remove(item);
+        ReplaceObject.ValuesToKeep.Remove(item);
     }
 
     public void AddItem()
     {
-        _itemsToKeep.Add("");
+        ReplaceObject.ValuesToKeep.Add(new ());
     }
 
     private async Task SaveItems()
     {
-        ReplaceObject.ValuesToKeep = _itemsToKeep;
         await BlazoredModal.CloseAsync(ModalResult.Ok<bool>(true));
     }
 
